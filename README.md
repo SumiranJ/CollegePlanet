@@ -1,2 +1,2 @@
 # CollegePlanet
-An app to let students track their progress in their academic journey.
+CollegePlanet helps students organize and track their academic progress in one place.
