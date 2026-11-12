@@ -1,0 +1,49 @@
+@startuml CollegePlanetAssessmentRoadmap
+autonumber
+actor Student
+boundary "Next.js assessment and roadmap UI" as UI
+control "Authenticated server route" as Route
+control "Assessment/Roadmap service" as Service
+database "PostgreSQL via Prisma" as DB
+
+Student -> UI: Open career assessment
+UI -> Route: GET assessment
+Route -> Route: Validate session and student role
+Route -> Service: Load active assessment
+Service -> DB: Read assessment, ordered questions and choices
+DB --> Service: Assessment definition
+Service --> Route: Assessment definition
+Route --> UI: Render questions and progress
+
+loop For each answered question
+  Student -> UI: Choose answer and continue
+  UI -> Route: Save response(attempt, question, choice)
+  Route -> Route: Validate ownership and answer
+  Route -> Service: Upsert response
+  Service -> DB: Insert/update assessment_attempts and assessment_responses
+  DB --> Service: Persisted response
+  Service --> Route: Updated completion progress
+  Route --> UI: Show next question and progress
+end
+
+Student -> UI: Submit assessment
+UI -> Route: Submit attempt
+Route -> Route: Validate session, ownership and required answers
+Route -> Service: Complete attempt and derive career profile
+Service -> DB: Transaction: mark attempt submitted; load responses/profile
+DB --> Service: Submitted answers and student profile
+Service -> Service: Map assessment results to target career role and milestones
+Service -> DB: Transaction: create/update roadmap and milestones
+DB --> Service: Persisted roadmap
+Service --> Route: Roadmap with milestones and progress
+Route --> UI: Render roadmap overview
+
+Student -> UI: Add or update a custom goal
+UI -> Route: Save goal(roadmap, goal fields)
+Route -> Route: Validate roadmap ownership
+Route -> Service: Create/update roadmap goal
+Service -> DB: Insert/update roadmap_goals
+DB --> Service: Persisted goal
+Service --> Route: Updated roadmap progress
+Route --> UI: Refresh roadmap
+@enduml

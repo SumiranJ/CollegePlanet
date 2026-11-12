@@ -1,0 +1,53 @@
+@startuml CollegePlanetJobsApplication
+autonumber
+actor Employer
+actor Student
+boundary "Next.js job UI" as UI
+control "Authenticated server route" as Route
+control "Job/Application service" as Service
+database "PostgreSQL via Prisma" as DB
+
+group Employer creates or edits a listing
+  Employer -> UI: Submit job details and skill requirements
+  UI -> Route: POST/PATCH job
+  Route -> Route: Validate employer session and organization access
+  Route -> Service: Validate listing and skills
+  Service -> DB: Read organization membership and skill records
+  DB --> Service: Authorization and skill data
+  Service -> DB: Transaction: write job and job_skill_requirements
+  DB --> Service: Persisted job
+  Service --> Route: Saved listing
+  Route --> UI: Confirm update
+end
+
+group Student searches and saves a listing
+  Student -> UI: Search, filter and sort jobs
+  UI -> Route: GET jobs(query, filters, sort)
+  Route -> Route: Validate student session
+  Route -> Service: Find active matching jobs
+  Service -> DB: Read jobs, skills, profile preferences and match attributes
+  DB --> Service: Matching job records
+  Service --> Route: Results
+  Route --> UI: Render jobs and details
+
+  Student -> UI: Save job
+  UI -> Route: PUT saved job(job_id)
+  Route -> Route: Validate student session
+  Route -> Service: Save job for student
+  Service -> DB: Insert saved_jobs (ON CONFLICT DO NOTHING)
+  DB --> Service: Saved state
+  Service --> Route: Saved job
+  Route --> UI: Update saved indicator
+end
+
+group Student applies using profile
+  Student -> UI: Apply to job and complete missing fields
+  UI -> Route: POST application(job_id, supplemental fields)
+  Route -> Route: Validate session, profile ownership and job status
+  Route -> Service: Build application from profile and supplemental fields
+  Service -> DB: Transaction: read profile/job; insert application snapshot
+  DB --> Service: Persisted application
+  Service --> Route: Application confirmation
+  Route --> UI: Show submitted status
+end
+@enduml
